@@ -1,9 +1,10 @@
 package io.github.floriangubler;
 
-import java.io.BufferedInputStream;
+import io.github.floriangubler.brainfuck.BrainFuckException;
+import io.github.floriangubler.brainfuck.Interpreter;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 public class Main {
