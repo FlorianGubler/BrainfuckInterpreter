@@ -1,12 +1,6 @@
 package io.github.floriangubler;
 
 import java.io.*;
-import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
-import java.nio.charset.Charset;
-import java.sql.Array;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 public class Interpreter {
     private int ptr; // Data pointer
@@ -23,29 +17,26 @@ public class Interpreter {
     //Interpreter Position from InputStream
     private int counter = 0;
 
+    //Loop buff 1/4 of memory
+    private byte[] loopBuff = new byte[MAX_MEM / 4];
+
     public static void brainfuck(InputStream inputStream) throws IOException, BrainFuckException {
-        new Interpreter().interpret(inputStream, Charset.defaultCharset());
+        System.out.println("");
+        new Interpreter().interpret(inputStream);
     }
 
-    public static void brainfuck(InputStream inputStream, Charset charset) throws IOException, BrainFuckException {
-        new Interpreter().interpret(inputStream, charset);
-    }
-
-    private void interpret(InputStream intputStream, Charset charset) throws BrainFuckException, IOException {
-        interpret(intputStream, charset, 0);
-    }
-
-    private void interpret(InputStream inputStream, Charset charset, int loopDepth) throws BrainFuckException {
-        //Buffered reader for efficiency
-        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream, MAX_MEM / 2);
+    private void interpret(InputStream inputStream) throws BrainFuckException {
+        //Pusback Input Stream to buffer loops. Max Buffer is half memory minus Storage for jump tables
+        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream, (MAX_MEM / 4));
         LoopState loopState = LoopState.NO_LOOP;
-        int loopCounter = 0;
         int r;
         try {
             while ((r = pbInputStream.read()) != -1) {
-                counter++;
                 char ch = (char) r;
-                if (((loopState != LoopState.SKIP || ch == ']') && (loopState != LoopState.BUFFER || ch == ']'))) {
+                if(loopState == LoopState.LOOP){
+                    loopBuff[counter] = (byte) r;
+                }
+                if(loopState != LoopState.SKIP || ch == ']') {
                     switch (ch) {
                         case '>':
                             ptr++;
@@ -71,24 +62,29 @@ public class Interpreter {
                             if (memory[ptr] == 0) {
                                 loopState = LoopState.SKIP;
                             } else {
-                                loopState = LoopState.BUFFER;
+                                loopState = LoopState.LOOP;
                             }
                             break;
                         case ']':
                             if (loopState == LoopState.SKIP) {
                                 loopState = LoopState.NO_LOOP;
-                            } else if (loopState == LoopState.BUFFER) {
-                                while (memory[ptr] != 0) {
-
+                            } else if (loopState == LoopState.LOOP) {
+                                if (memory[ptr] != 0) {
+                                    pbInputStream.unread(loopBuff);
+                                    //Clear value
+                                    loopBuff = new byte[MAX_MEM / 4];
+                                } else{
+                                    loopState = LoopState.NO_LOOP;
                                 }
-                                loopState = LoopState.NO_LOOP;
-                                loopCounter++;
                             } else {
                                 throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
                             }
                             break;
+                        default:
+                            counter--; //Because count only on real BF char
                     }
                 }
+                counter++;
             }
         } catch (ArrayIndexOutOfBoundsException e){
             throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError());
@@ -97,27 +93,9 @@ public class Interpreter {
         }
     }
 
-    private byte[] charsToBytes(char[] chars, Charset charset) {
-        CharBuffer charBuffer = CharBuffer.wrap(chars);
-        ByteBuffer byteBuffer = charset.encode(charBuffer);
-        byte[] bytes = Arrays.copyOfRange(byteBuffer.array(),
-                byteBuffer.position(), byteBuffer.limit());
-        Arrays.fill(byteBuffer.array(), (byte) 0); // clear sensitive data
-        return bytes;
-    }
-
-    private void array_add(char[] arr, char o){
-        for (int i = 0; i < arr.length; i ++) {
-            if (arr[i] == 0){
-                arr[i] = o;
-                break;
-            }
-        }
-    }
-
     private enum LoopState{
         SKIP,
-        BUFFER,
+        LOOP,
         NO_LOOP;
     }
 }
