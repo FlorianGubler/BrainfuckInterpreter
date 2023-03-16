@@ -16,43 +16,35 @@ public class Interpreter {
     // number.
     public static final int MAX_MEM = 65535;
 
-    // Array of byte type simulating memory of max
-    // 65535 bits from 0 to 65534.
+    // Array of byte type simulating memory of half max
+    // other half is for buffering
     private final byte[] memory = new byte[MAX_MEM / 2];
 
     //Interpreter Position from InputStream
     private int counter = 0;
 
-    //Buffer
-    private final char[][][] loopBuffer = new char[500][500][((MAX_MEM / 2) / 16) - 1000];
-
     public static void brainfuck(InputStream inputStream) throws IOException, BrainFuckException {
-        System.out.println("");
         new Interpreter().interpret(inputStream, Charset.defaultCharset());
     }
 
     public static void brainfuck(InputStream inputStream, Charset charset) throws IOException, BrainFuckException {
-        System.out.println("");
         new Interpreter().interpret(inputStream, charset);
     }
 
-    public void interpret(InputStream intputStream, Charset charset) throws BrainFuckException, IOException {
+    private void interpret(InputStream intputStream, Charset charset) throws BrainFuckException, IOException {
         interpret(intputStream, charset, 0);
     }
 
-    private void interpret(InputStream inputStream, Charset charset, int loopDepth) throws IOException, BrainFuckException {
+    private void interpret(InputStream inputStream, Charset charset, int loopDepth) throws BrainFuckException {
         //Buffered reader for efficiency
-        BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
+        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream, MAX_MEM / 2);
         LoopState loopState = LoopState.NO_LOOP;
         int loopCounter = 0;
         int r;
         try {
-            while ((r = reader.read()) != -1) {
+            while ((r = pbInputStream.read()) != -1) {
                 counter++;
                 char ch = (char) r;
-                if (loopState == LoopState.BUFFER && ch != ']' && ch != '[') {
-                    array_add(loopBuffer[loopDepth][loopCounter], ch);
-                }
                 if (((loopState != LoopState.SKIP || ch == ']') && (loopState != LoopState.BUFFER || ch == ']'))) {
                     switch (ch) {
                         case '>':
@@ -87,7 +79,7 @@ public class Interpreter {
                                 loopState = LoopState.NO_LOOP;
                             } else if (loopState == LoopState.BUFFER) {
                                 while (memory[ptr] != 0) {
-                                    interpret(new ByteArrayInputStream(charsToBytes(loopBuffer[loopDepth][loopCounter], charset)), charset, loopDepth + 1);
+
                                 }
                                 loopState = LoopState.NO_LOOP;
                                 loopCounter++;
