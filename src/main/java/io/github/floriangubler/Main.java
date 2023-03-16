@@ -14,7 +14,7 @@ public class Main {
         } catch (IOException e){
             e.printStackTrace();
         } catch (BrainFuckException e1){
-            e1.printOut();
+            e1.printOut(false);
         }
     }
 }

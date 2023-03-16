@@ -6,7 +6,7 @@ import java.io.*;
 import java.util.Arrays;
 
 public class Interpreter {
-    private int ptr; // Data pointer
+    private int ptr = 0; // Data pointer
 
     // Max memory limit. It is the highest number which
     // can be represented by an unsigned 16-bit binary

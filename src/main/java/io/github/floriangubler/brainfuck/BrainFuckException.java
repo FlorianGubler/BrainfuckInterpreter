@@ -22,16 +22,19 @@ public class BrainFuckException extends Exception {
         this.memory = memory;
     }
 
-    public void printOut(){
+    public void printOut(boolean debug){
         if(this.getMessage() != null){
             System.err.println("Brainfuck Runtime Exception occured: " + this.getMessage());
         } else{
             System.err.println("Brainfuck Runtime Exception occured: " + this.getCause().getMessage());
         }
         System.err.println("At position: " + this.interpretPos);
-        System.err.println("Program data: ");
         System.err.println("Pointer Position: " + this.ptr);
-        System.err.println("Memory: ");
-        System.err.println(Arrays.toString(memory));
+        System.err.print("Memory: ");
+        if(debug){
+            System.err.println(Arrays.toString(memory));
+        } else{
+            System.err.println("Enable debug to output full memory");
+        }
     }
 }
