@@ -1,10 +1,10 @@
 package io.github.floriangubler;
 
 import java.io.*;
-import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
+import java.sql.Array;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
@@ -19,6 +19,9 @@ public class Interpreter {
     // Array of byte type simulating memory of max
     // 65535 bits from 0 to 65534.
     private final byte[] memory = new byte[MAX_MEM / 2];
+
+    //Interpreter Position from InputStream
+    private int counter = 0;
 
     //Buffer
     private final char[][][] loopBuffer = new char[500][500][((MAX_MEM / 2) / 16) - 1000];
@@ -41,59 +44,64 @@ public class Interpreter {
         //Buffered reader for efficiency
         BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, charset));
         LoopState loopState = LoopState.NO_LOOP;
-        int counter = 0;
         int loopCounter = 0;
         int r;
-        while ((r = reader.read()) != -1) {
-            counter++;
-            char ch = (char) r;
-            if(loopState == LoopState.BUFFER && ch != ']' && ch != '['){
-                array_add(loopBuffer[loopDepth][loopCounter], ch);
-            }
-            if(((loopState != LoopState.SKIP || ch == ']') && (loopState != LoopState.BUFFER || ch == ']'))){
-                switch(ch){
-                    case '>':
-                        ptr++;
-                        break;
-                    case '<':
-                        ptr--;
-                        break;
-                    case '+':
-                        memory[ptr]++;
-                        break;
-                    case '-':
-                        memory[ptr]--;
-                        break;
-                    case '.':
-                        System.out.print((char) memory[ptr]);
-                        break;
-                    case ',':
-                        int inp = System.in.read();
-                        if(inp == -1) System.err.println("No more input");
-                        memory[ptr] = (byte) inp;
-                        break;
-                    case '[':
-                        if(memory[ptr] == 0){
-                            loopState = LoopState.SKIP;
-                        } else{
-                            loopState = LoopState.BUFFER;
-                        }
-                        break;
-                    case ']':
-                        if(loopState == LoopState.SKIP){
-                            loopState = LoopState.NO_LOOP;
-                        } else if (loopState == LoopState.BUFFER){
-                            while(memory[ptr] != 0){
-                                interpret(new ByteArrayInputStream(charsToBytes(loopBuffer[loopDepth][loopCounter], charset)), charset, loopDepth + 1);
+        try {
+            while ((r = reader.read()) != -1) {
+                counter++;
+                char ch = (char) r;
+                if (loopState == LoopState.BUFFER && ch != ']' && ch != '[') {
+                    array_add(loopBuffer[loopDepth][loopCounter], ch);
+                }
+                if (((loopState != LoopState.SKIP || ch == ']') && (loopState != LoopState.BUFFER || ch == ']'))) {
+                    switch (ch) {
+                        case '>':
+                            ptr++;
+                            break;
+                        case '<':
+                            ptr--;
+                            break;
+                        case '+':
+                            memory[ptr]++;
+                            break;
+                        case '-':
+                            memory[ptr]--;
+                            break;
+                        case '.':
+                            System.out.print((char) memory[ptr]);
+                            break;
+                        case ',':
+                            int inp = System.in.read();
+                            if (inp == -1) System.err.println("No more input");
+                            memory[ptr] = (byte) inp;
+                            break;
+                        case '[':
+                            if (memory[ptr] == 0) {
+                                loopState = LoopState.SKIP;
+                            } else {
+                                loopState = LoopState.BUFFER;
                             }
-                            loopState = LoopState.NO_LOOP;
-                            loopCounter++;
-                        } else{
-                            throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
-                        }
-                        break;
+                            break;
+                        case ']':
+                            if (loopState == LoopState.SKIP) {
+                                loopState = LoopState.NO_LOOP;
+                            } else if (loopState == LoopState.BUFFER) {
+                                while (memory[ptr] != 0) {
+                                    interpret(new ByteArrayInputStream(charsToBytes(loopBuffer[loopDepth][loopCounter], charset)), charset, loopDepth + 1);
+                                }
+                                loopState = LoopState.NO_LOOP;
+                                loopCounter++;
+                            } else {
+                                throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
+                            }
+                            break;
+                    }
                 }
             }
+        } catch (ArrayIndexOutOfBoundsException e){
+            throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError());
+        } catch (Exception e1){
+            throw new BrainFuckException(counter, ptr, memory, e1);
         }
     }
 

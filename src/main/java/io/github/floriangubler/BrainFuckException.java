@@ -15,8 +15,19 @@ public class BrainFuckException extends Exception {
         this.memory = memory;
     }
 
+    public BrainFuckException(int interpretPos, int ptr, byte[] memory, Throwable e) {
+        super(e);
+        this.interpretPos = interpretPos;
+        this.ptr = ptr;
+        this.memory = memory;
+    }
+
     public void printOut(){
-        System.err.println("Brainfuck Runtime Exception occured: " + this.getMessage());
+        if(this.getMessage() != null){
+            System.err.println("Brainfuck Runtime Exception occured: " + this.getMessage());
+        } else{
+            System.err.println("Brainfuck Runtime Exception occured: " + this.getCause().getMessage());
+        }
         System.err.println("At position: " + this.interpretPos);
         System.err.println("Program data: ");
         System.err.println("Pointer Position: " + this.ptr);
