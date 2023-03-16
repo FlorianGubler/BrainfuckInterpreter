@@ -1,6 +1,9 @@
-package io.github.floriangubler;
+package io.github.floriangubler.brainfuck;
+
+import io.github.floriangubler.utils.Util;
 
 import java.io.*;
+import java.util.Arrays;
 
 public class Interpreter {
     private int ptr; // Data pointer
@@ -34,7 +37,7 @@ public class Interpreter {
             while ((r = pbInputStream.read()) != -1) {
                 char ch = (char) r;
                 if(loopState == LoopState.LOOP){
-                    loopBuff[counter] = (byte) r;
+                    Util.arrayAdd(loopBuff, (byte) r);
                 }
                 if(loopState != LoopState.SKIP || ch == ']') {
                     switch (ch) {
@@ -70,11 +73,12 @@ public class Interpreter {
                                 loopState = LoopState.NO_LOOP;
                             } else if (loopState == LoopState.LOOP) {
                                 if (memory[ptr] != 0) {
-                                    pbInputStream.unread(loopBuff);
+                                    pbInputStream.unread(loopBuff, 0, Util.arrayLength(loopBuff));
                                     //Clear value
                                     loopBuff = new byte[MAX_MEM / 4];
                                 } else{
                                     loopState = LoopState.NO_LOOP;
+                                    loopBuff = new byte[MAX_MEM / 4];
                                 }
                             } else {
                                 throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
@@ -87,7 +91,7 @@ public class Interpreter {
                 counter++;
             }
         } catch (ArrayIndexOutOfBoundsException e){
-            throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError());
+            throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError("BF Out of Memory error"));
         } catch (Exception e1){
             throw new BrainFuckException(counter, ptr, memory, e1);
         }
