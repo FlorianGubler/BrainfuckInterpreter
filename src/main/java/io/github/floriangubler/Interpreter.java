@@ -65,7 +65,7 @@ public class Interpreter {
                         memory[ptr]--;
                         break;
                     case '.':
-                        System.out.println((char) memory[ptr]);
+                        System.out.print((char) memory[ptr]);
                         break;
                     case ',':
                         int inp = System.in.read();
@@ -83,10 +83,8 @@ public class Interpreter {
                         if(loopState == LoopState.SKIP){
                             loopState = LoopState.NO_LOOP;
                         } else if (loopState == LoopState.BUFFER){
-                            System.out.println(String.copyValueOf(loopBuffer[loopDepth][loopCounter]));
                             while(memory[ptr] != 0){
                                 interpret(new ByteArrayInputStream(charsToBytes(loopBuffer[loopDepth][loopCounter], charset)), charset, loopDepth + 1);
-                                memory[ptr]--;
                             }
                             loopState = LoopState.NO_LOOP;
                             loopCounter++;
