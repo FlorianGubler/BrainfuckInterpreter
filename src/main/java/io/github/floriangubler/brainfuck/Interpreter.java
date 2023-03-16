@@ -20,9 +20,6 @@ public class Interpreter {
     //Interpreter Position from InputStream
     private int counter = 0;
 
-    //Loop buff 1/4 of memory
-    private byte[] loopBuff = new byte[MAX_MEM / 4];
-
     public static void brainfuck(InputStream inputStream) throws IOException, BrainFuckException {
         System.out.println("");
         new Interpreter().interpret(inputStream);
@@ -30,15 +27,12 @@ public class Interpreter {
 
     private void interpret(InputStream inputStream) throws BrainFuckException {
         //Pusback Input Stream to buffer loops. Max Buffer is half memory minus Storage for jump tables
-        PushbackInputStream pbInputStream = new PushbackInputStream(inputStream, (MAX_MEM / 4));
+        PushbackInputStreamJumper jumper = new PushbackInputStreamJumper(new PushbackInputStream(inputStream, MAX_MEM / 4), ((MAX_MEM / 4) - (100 / 4)), 100);
         LoopState loopState = LoopState.NO_LOOP;
         int r;
         try {
-            while ((r = pbInputStream.read()) != -1) {
+            while ((r = jumper.read()) != -1) {
                 char ch = (char) r;
-                if(loopState == LoopState.LOOP){
-                    Util.arrayAdd(loopBuff, (byte) r);
-                }
                 if(loopState != LoopState.SKIP || ch == ']') {
                     switch (ch) {
                         case '>':
@@ -64,7 +58,8 @@ public class Interpreter {
                         case '[':
                             if (memory[ptr] == 0) {
                                 loopState = LoopState.SKIP;
-                            } else {
+                            } else{
+                                jumper.pushMarker();
                                 loopState = LoopState.LOOP;
                             }
                             break;
@@ -73,12 +68,9 @@ public class Interpreter {
                                 loopState = LoopState.NO_LOOP;
                             } else if (loopState == LoopState.LOOP) {
                                 if (memory[ptr] != 0) {
-                                    pbInputStream.unread(loopBuff, 0, Util.arrayLength(loopBuff));
-                                    //Clear value
-                                    loopBuff = new byte[MAX_MEM / 4];
+                                    jumper.goToLastMarker();
                                 } else{
                                     loopState = LoopState.NO_LOOP;
-                                    loopBuff = new byte[MAX_MEM / 4];
                                 }
                             } else {
                                 throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
@@ -93,6 +85,7 @@ public class Interpreter {
         } catch (ArrayIndexOutOfBoundsException e){
             throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError("BF Out of Memory error"));
         } catch (Exception e1){
+            e1.printStackTrace();
             throw new BrainFuckException(counter, ptr, memory, e1);
         }
     }
