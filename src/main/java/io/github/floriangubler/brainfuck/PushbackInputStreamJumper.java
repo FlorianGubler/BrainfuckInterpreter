@@ -4,8 +4,8 @@ import io.github.floriangubler.utils.ReducedIntStack;
 import io.github.floriangubler.utils.Util;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.PushbackInputStream;
-import java.lang.reflect.Field;
 import java.util.Arrays;
 
 /*
@@ -29,6 +29,9 @@ public class PushbackInputStreamJumper {
 
     /* Current relative position in stream */
     private int currPosition = 0;
+
+    private int curr;
+
     public PushbackInputStreamJumper(PushbackInputStream stream, int bufferSize, int markerLimit){
         this.stream = stream;
         this.buff = new byte[bufferSize];
@@ -36,9 +39,9 @@ public class PushbackInputStreamJumper {
     }
 
     public int read() throws IOException {
+        if(currRelPosition == currPosition) currPosition++;
         currRelPosition++;
-        currPosition++;
-        int curr = stream.read();
+        curr = stream.read();
         System.out.print((char) curr);
         if(stack.getTop() != -1 && currRelPosition == currPosition){
             Util.arrayAdd(buff, (byte) curr);
@@ -46,17 +49,29 @@ public class PushbackInputStreamJumper {
         return curr;
     }
 
-    public void pushMarker(){
+    public void mark(){
+        if(stack.getTop() == -1) Util.arrayAdd(buff, (byte) curr);
         stack.push(currRelPosition);
     }
 
-    public void goToLastMarker() throws IOException {
+    public void back() throws IOException {
         int lastMarker = stack.pop();
-        System.out.println(Arrays.toString(buff));
+        System.out.println();
+        System.out.println(lastMarker);
+        System.out.println(currRelPosition);
+        for(byte b : buff){
+            System.out.print((char) b);
+        }
+        System.out.println();
         stream.unread(buff, lastMarker - stack.getDeepest(), currRelPosition - lastMarker + 1);
+        currRelPosition = lastMarker - 1;
+        currPosition++;
         if(stack.getTop() == -1){
             Util.arrayClear(buff);
         }
-        currRelPosition = lastMarker;
+    }
+
+    public int getCurrRelPosition(){
+        return this.currRelPosition;
     }
 }

@@ -1,9 +1,6 @@
 package io.github.floriangubler.brainfuck;
 
-import io.github.floriangubler.utils.Util;
-
 import java.io.*;
-import java.util.Arrays;
 
 public class Interpreter {
     private int ptr = 0; // Data pointer
@@ -16,9 +13,6 @@ public class Interpreter {
     // Array of byte type simulating memory of half max
     // other half is for buffering
     private final byte[] memory = new byte[MAX_MEM / 2];
-
-    //Interpreter Position from InputStream
-    private int counter = 0;
 
     public static void brainfuck(InputStream inputStream) throws IOException, BrainFuckException {
         System.out.println("");
@@ -59,7 +53,7 @@ public class Interpreter {
                             if (memory[ptr] == 0) {
                                 loopState = LoopState.SKIP;
                             } else{
-                                jumper.pushMarker();
+                                jumper.mark();
                                 loopState = LoopState.LOOP;
                             }
                             break;
@@ -68,25 +62,23 @@ public class Interpreter {
                                 loopState = LoopState.NO_LOOP;
                             } else if (loopState == LoopState.LOOP) {
                                 if (memory[ptr] != 0) {
-                                    jumper.goToLastMarker();
+                                    jumper.back();
                                 } else{
                                     loopState = LoopState.NO_LOOP;
                                 }
                             } else {
-                                throw new BrainFuckException(counter, ptr, memory, "Invalid loop format");
+                                throw new BrainFuckException(jumper.getCurrRelPosition(), ptr, memory, "Invalid loop format");
                             }
                             break;
-                        default:
-                            counter--; //Because count only on real BF char
                     }
                 }
-                counter++;
             }
         } catch (ArrayIndexOutOfBoundsException e){
-            throw new BrainFuckException(counter, ptr, memory, new OutOfMemoryError("BF Out of Memory error"));
+            e.printStackTrace();
+            throw new BrainFuckException(jumper.getCurrRelPosition(), ptr, memory, new OutOfMemoryError("BF Out of Memory error"));
         } catch (Exception e1){
             e1.printStackTrace();
-            throw new BrainFuckException(counter, ptr, memory, e1);
+            throw new BrainFuckException(jumper.getCurrRelPosition(), ptr, memory, e1);
         }
     }
 
