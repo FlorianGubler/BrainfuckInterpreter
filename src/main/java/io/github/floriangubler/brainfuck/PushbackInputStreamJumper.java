@@ -1,21 +1,18 @@
 package io.github.floriangubler.brainfuck;
 
 import io.github.floriangubler.utils.ReducedIntStack;
-import io.github.floriangubler.utils.Util;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PushbackInputStream;
-import java.util.Arrays;
 
 /*
  * @author Florian Gubler
- * A Jumper with a Stack of Jump Points for BF Nested Loop Implementation.
- * After marking the class buffers the input stream, so you can jump back to the last marking point.
+ * A Jumper with a Stack of Jump Points for BrainFuck Nested Loop Implementation with a stream
+ * After marking, the class buffers the input stream automatically, so you can jump back to the last marking point without worrying about data
  */
 public class PushbackInputStreamJumper {
 
-    /* The PusbackInputStream to work with */
+    /* The PushbackInputStream to work with */
     private final PushbackInputStream stream;
 
     /* The marker stack */
@@ -25,53 +22,62 @@ public class PushbackInputStreamJumper {
     private final byte[] buff;
 
     /* Current relative position to pushbacks in stream */
-    private int currRelPosition = 0;
+    private int pos = 0;
 
-    /* Current relative position in stream */
-    private int currPosition = 0;
-
+    /* The current byte from stream */
     private int curr;
 
+    /* Constructor for the PushbackInputStreamJumper */
     public PushbackInputStreamJumper(PushbackInputStream stream, int bufferSize, int markerLimit){
         this.stream = stream;
         this.buff = new byte[bufferSize];
         this.stack = new ReducedIntStack(markerLimit);
     }
 
+    /* Reads next byte from stream */
     public int read() throws IOException {
-        if(currRelPosition == currPosition) currPosition++;
-        currRelPosition++;
+        //Increase position in stream
+        pos++;
+        //Read new byte from stream
         curr = stream.read();
-        System.out.print((char) curr);
-        if(stack.getTop() != -1 && currRelPosition == currPosition){
-            Util.arrayAdd(buff, (byte) curr);
+        //If marked and current byte not already buffered, buffer current byte
+        if(isMarked() && buff[pos] == 0){
+            buff[pos] = (byte) curr;
         }
+        //Return current byte
         return curr;
     }
 
+    /* Marks the current position in stream */
     public void mark(){
-        if(stack.getTop() == -1) Util.arrayAdd(buff, (byte) curr);
-        stack.push(currRelPosition);
+        //Because stack is empty when check to buff in read()
+        if(stack.getTop() == -1) buff[pos] = (byte) curr;
+        //Push pos to marker stack
+        stack.push(pos);
     }
 
+    /* Jumps back to last marked position and removes it */
     public void back() throws IOException {
+        // Pop last marker from marker stack
         int lastMarker = stack.pop();
-        System.out.println();
-        System.out.println(lastMarker);
-        System.out.println(currRelPosition);
-        for(byte b : buff){
-            System.out.print((char) b);
-        }
-        System.out.println();
-        stream.unread(buff, lastMarker - stack.getDeepest(), currRelPosition - lastMarker + 1);
-        currRelPosition = lastMarker - 1;
-        currPosition++;
-        if(stack.getTop() == -1){
-            Util.arrayClear(buff);
-        }
+        // Unread to last marker from stream
+        stream.unread(buff, lastMarker, pos - lastMarker + 1);
+        //Reset position to lastMarker - 1 because read() increases it
+        pos = lastMarker - 1;
     }
 
-    public int getCurrRelPosition(){
-        return this.currRelPosition;
+    /* Get current relative position in stream */
+    public int getPos(){
+        return this.pos;
+    }
+
+    /* Check if stream is marked */
+    public boolean isMarked(){
+        return this.stack.getTop() != -1;
+    }
+
+    /* Delete the last marker */
+    public void popMarker(){
+        this.stack.pop();
     }
 }

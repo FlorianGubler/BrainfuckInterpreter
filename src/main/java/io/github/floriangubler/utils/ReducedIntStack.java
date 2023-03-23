@@ -2,31 +2,39 @@ package io.github.floriangubler.utils;
 
 import java.util.EmptyStackException;
 
+/*
+ * @author Gubler Florian
+ * Simple int stack becuase java.util.Stack is overloaded
+ */
 public class ReducedIntStack {
+    /* The stack array */
     private final int[] arr;
-    private final int cap;
-    private int top;
 
+    /* The stack capacity (size) */
+    private final int capacity;
+
+    /* The current top of the stack */
+    private int top = -1;
+
+    /* Constructor for the int stack with a size */
     public ReducedIntStack(int size) {
-        cap = size;
+        capacity = size;
         arr = new int[size];
-        top = -1;
     }
 
+    /* Method for pushing a new int to the stack */
     public void push(int n) {
-        if (top == cap) throw new StackOverflowError();
+        if (top == capacity) throw new StackOverflowError();
         arr[++top] = n;
     }
 
+    /* Method for pop the top element of the stack */
     public int pop() {
         if (top == -1) throw new EmptyStackException();
         return arr[top--];
     }
 
-    public int getDeepest(){
-        return arr[0];
-    }
-
+    /* Get the current top of the stack */
     public int getTop(){
         return top;
     }
